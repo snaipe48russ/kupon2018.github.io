@@ -1,0 +1,20 @@
+var ym = ym || {}; ym.i18n = ym.i18n || {}; ym.i18n.keys = ym.i18n.keys || {};
+
+ym.i18n.key = ym.i18n.key || function (keysetId, keyId, params) {
+	var keyset = ym.i18n.keys[keysetId];
+	var keyValue = keyset ? keyset[keyId] : "";
+	var param, paramShortcut;
+	if (typeof params === "object") {
+		for(param in params) {
+			if (params.hasOwnProperty(param)) {
+				paramShortcut = "<i18n:param>" + param + "</i18n:param>";
+				while (keyValue.indexOf(paramShortcut) > -1) {
+					keyValue = keyValue.replace(paramShortcut, params[param]);
+				}
+			}
+		};
+	}
+	return keyValue || "";
+};
+
+ym.i18n.keys["js_portal_js_ui__ui.js"] = {"20_characters_maximum__E802813A14":"нельзя более 20 символов","Otmenit'_udaleniye__34eb8f0821":"Отменить удаление","Udalit'__ed2bbfbc53":"Удалить","add_to_favorites__D022B56377":"Добавить в избранное","checking_password_strength__77A36C1455":"проверка надёжности...","currency_kop__4198656ac7":"коп.","currency_rub__c20ae17046":"руб.","day_names_full__b6103cf522":"Понедельник,Вторник,Среда,Четверг,Пятница,Суббота,Воскресенье","day_names_min__4406c99c8f":"Вс,Пн,Вт,Ср,Чт,Пт,Сб","debts__ab36aa2132":["штраф","штрафа","штрафов"],"debts__c2784eceff":["остался","осталось","осталось"],"debts__c27d559b16":["день","дня","дней"],"delete_from_favorites__9AFDD65ADF":"Удалить из избранного","found__adeeb11571":["Нашелся","Нашлось","Нашлось"],"found_taxes__plural__7f971e394f":["Найдена","Найдены","Найдено"],"incorrent_password_format":"нужны и буквы, и цифры","incorrent_symbols_in_the_password__264C6CCB51":"недопустимый символ в пароле","is_recommended_to_pay__72ae5e935d":"Нужно заплатить до","minutes_short":"{number} мин.","month_names_full__7467c2c563":"Январь,Февраль,Март,Апрель,Май,Июнь,Июль,Август,Сентябрь,Октябрь,Ноябрь,Декабрь","month_names_genetive_full__bc7a95abdf":"января,февраля,марта,апреля,мая,июня,июля,августа,сентября,октября,ноября,декабря","next_month_c547907585":"Вперед","one_symbol__F55AE44E66":"символ","pay_button_value__9c2f191b75":"Заплатить","payment_processing__c309bbd595":"Платеж отправлен","periodic_reminder_pattern_eebc83493f":"<i18n:param>dd</i18n:param> числа","previous_month_425f094f69":"Назад","prodolzhit__e9c3a648ce":" Продолжить ","seconds_short":"{number} секунд","skusoft_payer_empty":"Поле не заполнено.","skusoft_payer_invalid":"Поле заполнено неверно.","taxes__plural__5cad435267":["задолженность","задолженности","задолженностей"],"ten_symbols__395F621161":"символов","two_symbols__239A8ECC43":"символа"};

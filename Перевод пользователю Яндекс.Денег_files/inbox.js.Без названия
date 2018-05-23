@@ -1,0 +1,242 @@
+//5k
+function InboxCounters(url)
+{
+	// request url
+	this.url = url || 'http://export.yandex.ru/counters-js.xml';
+
+	// true if success operation
+	this.success = false;
+
+	// id for timer
+	this.load_id = null;
+
+	this.window = window;
+	var agt = navigator.userAgent.toLowerCase();
+
+	this.isDOM = document.getElementById; //DOM1 browser
+	this.isO   = this.window.opera && this.isDOM; //Opera 5+
+	this.isIE  = document.all && document.all.item && !this.isO; //Microsoft Internet Explorer 4+
+	this.isIE5 = this.isIE && this.isDOM; //MSIE 5+
+	this.isGecko = ((agt.indexOf('gecko') != -1) && (agt.indexOf('khtml') == -1));
+
+	this.right_browser = this.isGecko || this.isIE5;
+
+	var self = this;
+
+	this.window.onLoadInbox = function()
+	{
+		self.onLoad(self);
+	};
+
+	this.window.getDataInbox = function()
+	{
+		self.getData(self);
+	};
+}
+
+InboxCounters.prototype =
+{
+	refresh: 5, timeout: 50000, charset: 'windows-1251',
+
+	onTimeout: function()
+	{
+		if (this.load_id && !this.success) {
+			this.window.clearTimeout(this.load_id);
+		}
+	},
+
+	getById: function(id)
+	{
+		if (this.isDOM) {
+			return document.getElementById(id);
+		} else if (document.all) {
+			return document.all[id];
+		}
+		return null;
+	},
+
+	getCookie: function(n)
+	{
+		var c = document.cookie;
+		if (c.length < 1) return false;
+
+		var b = c.indexOf(n + '=');
+		if (b == -1) return false;
+
+		b += (n.length + 1);
+		var e = c.indexOf(';', b);
+
+		return unescape((e == -1) ? c.substring(b) : c.substring(b, e));
+	},
+
+	checkSession: function()
+	{
+		var sid = this.getCookie('Session_id');
+		if (!sid) return false;
+		var parts = sid.split('.');
+		if (parts[2] == '1') return true;
+		var now = new Date().getTime();
+		if (parts[2] == '3') return parseFloat((now - parts[0] * 1000 - parts[1]) / 1000) < 1209600.0;
+		return parseFloat((now - parts[0] * 1000 - parts[1]) / 1000) < 7200.0;
+	},
+
+	isDeadSession: function()
+	{
+		return !this.checkSession();
+	},
+
+	isLogin: function()
+	{
+		if (this.isDeadSession()) {
+			return false;
+		}
+		var login = this.getCookie('yandex_login');
+		return (login && login.length > 1);
+	},
+
+	killTimerIfNeed: function()
+	{
+		if (this.load_id != null) {
+			this.window.clearTimeout(this.load_id);
+			this.load_id = null;
+		}
+	},
+
+	onLoad: function(self)
+	{
+		self.killTimerIfNeed();
+
+		var header = self.getById('inbox_logout');
+
+		//this.window.status = typeof(inboxCounters);
+		if (typeof(self.window.inboxCounters) != 'undefined' && !self.success && header) {
+			self.draw(self.window.inboxCounters);
+		} else {
+			self.load_id = self.window.setTimeout('onLoadInbox()', self.refresh);
+		}
+	},
+
+	// draw counters
+	draw: function(counters)
+	{
+		var item, name, count, icon, suffix, counter, services = counters.services;
+
+		function clck(a, w)
+		{
+			new Image().src = 'http://clck.yandex.ru/click/dtype=stred/pid=1/cid=' + w + '/*' + a.href;
+		}
+
+		for (name in services) {
+			// skip counters data (Bar BUG)
+			if (name.indexOf('_counter') != -1) {
+				continue;
+			}
+
+			item	= services[name];
+			count	= item.count;
+			icon	= item.icon;
+			suffix	= item.suffix;
+			counter = item.counter || services[name + '_counter'];
+
+			var id = 'inbox_counter_' + name;
+			var container = this.getById(id);
+
+			if (icon && (document.location.protocol && document.location.protocol == 'https:')) {
+				icon = icon.replace('http://', 'https://');
+			}
+
+			if (container) {
+				var icon_content = (icon ? '&#160;<img src="' + icon + '" alt=""\/>' : '');
+				var suffix_content = (suffix ? '&#160;' + suffix : '');
+				var count_content = ('&#160;' + count + suffix_content);
+
+				container.innerHTML = (count > 0 || (count >= 0 && suffix) ? icon_content + count_content : '');
+
+				if (counter) {
+					var link = container;
+					while ((link = link.previousSibling)) {
+						if (link.tagName && link.tagName.toLowerCase() == 'a') {
+							link.onclick = function(c) {
+								return function() { clck(this, c); };
+							}(counter);
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		if (this.callback && typeof(this.callback) == 'function') {
+			this.callback(this, counters);
+		}
+
+		this.success = true;
+	},
+
+	// create data node
+	getData: function(self)
+	{
+		var node = self.getById('inbox_data');
+
+		if (node) {
+			var data = document.createElement('script');
+			data.setAttribute('type', 'text/javascript');
+			data.setAttribute('charset', self.charset);
+			data.setAttribute('src', self.url);
+			data.setAttribute('onload', 'inbox.onLoad(inbox)');
+			node.appendChild(data);
+		}
+	},
+
+	// process counters
+	process: function()
+	{
+		// check if user log in
+		if (!this.isLogin()) return;
+
+		// check if old browser
+		if (!this.right_browser) return;
+
+		this.window.setTimeout('getDataInbox()', 0);
+
+		this.load_id = this.window.setTimeout('onLoadInbox()', this.refresh);
+
+		if (this.onTimeout && this.timeout > 0) {
+			this.window.setTimeout(this.onTimeout, this.timeout);
+		}
+	},
+
+	// load data for old browsers (insert on end of page)
+	load: function()
+	{
+		// check if is new browser
+		if (this.right_browser) return;
+
+		// check if user log in
+		if (!this.isLogin()) return;
+
+		// call inbox data
+		document.writeln('<script id="inbox_data_script" type="text\/javascript" charset="' + this.charset + '" src="' + this.url + '"><\/script>');
+
+		// save onload func
+		var onload = null;
+		if (this.window.onload) {
+			onload = this.window.onload;
+		}
+
+		var self = this;
+		this.window.onload = function(e)
+		{
+			self.onLoad(self);
+
+			// call saved onload func
+			if (onload) {
+				onload(e);
+			}
+		};
+
+		if (this.onTimeout && this.timeout > 0) {
+			this.window.setTimeout(this.onTimeout, this.timeout);
+		}
+	}
+};
